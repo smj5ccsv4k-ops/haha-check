@@ -445,6 +445,13 @@
                             <button onclick="setManualLevel()" class="px-3 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs whitespace-nowrap">적용</button>
                         </div>
                     </div>
+                    <!-- Quick Reset Button -->
+                    <div class="pt-2 border-t border-slate-700/40 flex justify-end">
+                        <button onclick="resetAllData()" class="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>포인트 & 레벨 초기화 (0P / Lv.1)</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Bonus Quest Settings -->
@@ -475,7 +482,7 @@
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         const todayDayStr = days[new Date().getDay()];
 
-        let state = {
+        const defaultState = {
             userName: "안태하 모험가",
             level: 3,
             currentExp: 150,
@@ -520,6 +527,31 @@
             ],
             coupons: []
         };
+
+        let state = loadState();
+
+        // Save & Load LocalStorage
+        function saveState() {
+            try {
+                localStorage.setItem('haha_check_state', JSON.stringify(state));
+            } catch (e) {
+                console.error("LocalStorage save failed:", e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('haha_check_state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.selectedDay = todayDayStr; // 접속 시 오늘 요일로 자동 고정
+                    return parsed;
+                }
+            } catch (e) {
+                console.error("LocalStorage load failed:", e);
+            }
+            return JSON.parse(JSON.stringify(defaultState));
+        }
 
         // Sound Synthesis via Tone.js
         function playSuccessSound() {
@@ -595,6 +627,7 @@
                 alert(`🎁 축하합니다! 오늘 ${state.targetQuestCount}개 이상의 퀘스트를 완료하여 +${state.targetBonusPoints}P 보너스를 받았습니다!`);
             }
 
+            saveState();
             renderDashboard();
         }
 
@@ -714,6 +747,7 @@
             state.coupons.push({ ...reward, purchasedAt: new Date() });
             triggerConfetti();
             alert(`🎉 '${reward.title}' 쿠폰을 성공적으로 교환했습니다!`);
+            saveState();
             renderDashboard();
         }
 
@@ -882,6 +916,7 @@
             const val = parseInt(document.getElementById('manualPointsInput').value);
             if (!isNaN(val)) {
                 state.totalPoints = val;
+                saveState();
                 renderDashboard();
                 alert(`포인트가 ${val}P로 변경되었습니다.`);
             }
@@ -891,8 +926,23 @@
             const val = parseInt(document.getElementById('manualLevelInput').value);
             if (!isNaN(val)) {
                 state.level = val;
+                saveState();
                 renderDashboard();
                 alert(`레벨이 Lv.${val}로 변경되었습니다.`);
+            }
+        }
+
+        function resetAllData() {
+            if (confirm('정말로 안태하 모험가의 포인트(0P)와 레벨(Lv.1)을 초기화하시겠습니까?')) {
+                state.totalPoints = 0;
+                state.todayPoints = 0;
+                state.level = 1;
+                state.currentExp = 0;
+                state.maxExp = 100;
+                state.quests.forEach(q => q.completed = false);
+                saveState();
+                renderDashboard();
+                alert('포인트 및 레벨 데이터가 완전히 초기화되었습니다.');
             }
         }
 
@@ -902,6 +952,7 @@
             if (!isNaN(count) && !isNaN(pts)) {
                 state.targetQuestCount = count;
                 state.targetBonusPoints = pts;
+                saveState();
                 renderDashboard();
                 alert('보너스 설정이 저장되었습니다.');
             }
