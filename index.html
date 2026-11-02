@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>하하췍 - 초등 모험가 포인트 대시보드</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Chart.js for Growth Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            user-select: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+        
+        /* 다크 / 라이트 모드 테마 변수 정의 */
+        body.dark-mode {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        body.light-mode {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* 모드별 카드 및 배경 요소 전환 */
+        body.dark-mode .app-card {
+            background-color: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+        body.light-mode .app-card {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.15);
+        }
+
+        body.dark-mode .app-item-bg {
+            background-color: #0f172a;
+            border-color: #334155;
+        }
+        body.light-mode .app-item-bg {
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        body.dark-mode .app-text-title { color: #ffffff; }
+        body.light-mode .app-text-title { color: #0f172a; }
+        
+        body.dark-mode .app-subtext { color: #94a3b8; }
+        body.light-mode .app-subtext { color: #64748b; }
+
+        /* 테마 선택 시 포인트 컬러 반응 */
+        .theme-blue { --accent-color: #3b82f6; --accent-hover: #2563eb; }
+        .theme-green { --accent-color: #10b981; --accent-hover: #059669; }
+        .theme-orange { --accent-color: #f97316; --accent-hover: #ea580c; }
+        .theme-pink { --accent-color: #ec4899; --accent-hover: #db2777; }
+
+        .btn-theme-accent {
+            background-color: var(--accent-color);
+        }
+        .btn-theme-accent:hover {
+            background-color: var(--accent-hover);
+        }
+        .text-theme-accent {
+            color: var(--accent-color);
+        }
+        .border-theme-accent {
+            border-color: var(--accent-color);
+        }
+
+        /* 애니메이션 효과 */
+        .bounce-complete {
+            animation: bounceAnim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes bounceAnim {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="dark-mode theme-blue min-h-screen pb-12">
+
+    <!-- Top Header Navigation -->
+    <header class="app-card border-b sticky top-0 z-30 px-4 py-3 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- Left Logo -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleAiSidebar()" class="lg:hidden p-2 rounded-xl app-item-bg text-indigo-400">
+                    <i class="fa-solid fa-robot text-lg"></i>
+                </button>
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-slate-900 shadow-md">
+                    <i class="fa-solid fa-square-check text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-jua text-xl app-text-title flex items-center gap-2">
+                        <span>하하췍!</span>
+                        <span class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">초등 4학년</span>
+                    </h1>
+                    <p class="text-[11px] app-subtext">오늘의 퀘스트를 수행하고 멋진 보상을 모아봐!</p>
+                </div>
+            </div>
+
+            <!-- Right Utilities (Theme & Parent Mode) -->
+            <div class="flex items-center space-x-2">
+                <!-- Theme Palette Color Picker -->
+                <div class="hidden sm:flex items-center bg-slate-800/40 p-1.5 rounded-2xl border border-slate-700/50 space-x-1">
+                    <button onclick="setThemeColor('blue')" class="w-5 h-5 rounded-full bg-blue-500 hover:scale-110 transition shadow"></button>
+                    <button onclick="setThemeColor('green')" class="w-5 h-5 rounded-full bg-emerald-500 hover:scale-110 transition shadow"></button>
+                    <button onclick="setThemeColor('orange')" class="w-5 h-5 rounded-full bg-orange-500 hover:scale-110 transition shadow"></button>
+                    <button onclick="setThemeColor('pink')" class="w-5 h-5 rounded-full bg-pink-500 hover:scale-110 transition shadow"></button>
+                </div>
+
+                <!-- Growth Graph Button -->
+                <button onclick="openHistoryModal()" class="px-3 py-2 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/30 text-xs font-bold flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-chart-line text-indigo-400"></i>
+                    <span>성장 이력</span>
+                </button>
+
+                <!-- Dark / Light Toggle -->
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-2xl app-item-bg hover:opacity-80 transition text-amber-400" title="화면 테마 변경">
+                    <i id="themeToggleIcon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+
+                <!-- Parent Admin Button -->
+                <button onclick="openParentAuthModal()" class="px-3 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-lock text-amber-400"></i>
+                    <span>부모 모드</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 mt-6">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT SIDEBAR: AI Helper Assistant (3 Cols) -->
+            <aside id="aiSidebar" class="lg:col-span-3 space-y-4 hidden lg:block">
+                <div class="app-card rounded-3xl p-5 border flex flex-col h-[650px] space-y-4">
+                    <!-- AI Title Header -->
+                    <div class="flex items-center space-x-3 border-b border-slate-700/40 pb-3">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-xl shadow">
+                            🐉
+                        </div>
+                        <div>
+                            <h3 class="font-jua text-base app-text-title">나의 AI 펫 (알림이)</h3>
+                            <p class="text-[11px] app-subtext">태하 모험가의 퀘스트 알림!</p>
+                        </div>
+                    </div>
+
+                    <!-- Notification Quick Filter Buttons -->
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="triggerPetAlert('reminder')" class="text-[11px] bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-xl font-medium transition">
+                            🔔 오늘 알림
+                        </button>
+                        <button onclick="triggerPetAlert('urgent')" class="text-[11px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold px-2.5 py-1 rounded-xl transition animate-pulse">
+                            ⏰ 시간 재촉!
+                        </button>
+                        <button onclick="triggerPetAlert('tip')" class="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 px-2.5 py-1 rounded-xl font-medium transition">
+                            💡 포인트 팁
+                        </button>
+                        <button onclick="triggerPetAlert('cheer')" class="text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-xl font-medium transition">
+                            🔥 응원 메시지
+                        </button>
+                    </div>
+
+                    <!-- Quest Reminders & Alerts Feed List -->
+                    <div id="aiChatContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+                        <!-- Alert Item 1 -->
+                        <div class="app-item-bg p-3 rounded-2xl border space-y-1">
+                            <div class="font-bold text-rose-400 flex items-center justify-between">
+                                <span>⏰ 시간 재촉 긴급 알림!</span>
+                                <span class="text-[10px] app-subtext">지금 당장</span>
+                            </div>
+                            <div class="app-text-title leading-relaxed">
+                                🚨 안태하 모험가님! 째깍째깍... ⏰ 시간이 얼마 없어요! <strong>'수학 문제집 2장'</strong> 지금 바로 안 시작하면 오늘 보너스 포인트 못 받아요! 얼른 출발~! 🐉🔥
+                            </div>
+                        </div>
+
+                        <!-- Alert Item 2 -->
+                        <div class="app-item-bg p-3 rounded-2xl border space-y-1">
+                            <div class="font-bold text-amber-400 flex items-center justify-between">
+                                <span>🎁 보너스 미션 안내</span>
+                                <span class="text-[10px] app-subtext">오늘의 목표</span>
+                            </div>
+                            <div class="app-text-title leading-relaxed">
+                                퀘스트 <strong>3개 이상 완료</strong> 시 추가로 +200P 보너스가 자동 지급돼요! 파이팅! 🚀
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Status Banner -->
+                    <div class="pt-3 border-t border-slate-700/40 text-center">
+                        <div class="text-[11px] app-subtext flex items-center justify-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>AI 펫이 퀘스트를 실시간 감시 중입니다!</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- RIGHT MAIN CONTENT (9 Cols) -->
+            <div class="lg:col-span-9 space-y-6">
+
+                <!-- 1. Top Section: Hero Profile & Dashboard -->
+                <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Hero Profile Card -->
+                    <div class="app-card rounded-3xl p-5 border flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-3xl shadow-lg text-white">
+                            🚀
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <h2 id="userName" class="font-jua text-xl app-text-title">안태하 모험가</h2>
+                                <span class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs px-2 py-0.5 rounded-full font-bold">
+                                    Lv. <span id="userLevel">3</span>
+                                </span>
+                            </div>
+                            <p id="levelTitle" class="text-xs text-amber-400 font-bold">3레벨 모험가</p>
+                            <!-- EXP Bar -->
+                            <div class="w-36 sm:w-44 bg-slate-900/40 rounded-full h-2.5 p-0.5 border border-slate-700/50 mt-1">
+                                <div id="expBar" class="bg-amber-400 h-full rounded-full transition-all duration-300" style="width: 50%;"></div>
+                            </div>
+                            <div class="text-[10px] app-subtext flex justify-between w-36 sm:w-44">
+                                <span>EXP</span>
+                                <span><span id="currentExp">150</span> / <span id="maxExp">300</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Points Stats Cards (2 Cols) -->
+                    <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <!-- Total Points -->
+                        <div class="app-item-bg p-4 rounded-2xl border space-y-1">
+                            <div class="flex items-center justify-between text-xs font-semibold app-subtext">
+                                <span>보유 포인트</span>
+                                <i class="fa-solid fa-coins text-amber-400 text-base"></i>
+                            </div>
+                            <div class="font-jua text-2xl sm:text-3xl text-amber-400 flex items-baseline space-x-1">
+                                <span id="totalPoints">1,250</span>
+                                <span class="text-xs font-normal">P</span>
+                            </div>
+                        </div>
+
+                        <!-- Today Earned Points -->
+                        <div class="app-item-bg p-4 rounded-2xl border space-y-1">
+                            <div class="flex items-center justify-between text-xs font-semibold app-subtext">
+                                <span>오늘 획득</span>
+                                <i class="fa-solid fa-bolt text-emerald-400 text-base"></i>
+                            </div>
+                            <div class="font-jua text-2xl sm:text-3xl text-emerald-400 flex items-baseline space-x-1">
+                                <span id="todayPoints">0</span>
+                                <span class="text-xs font-normal">P</span>
+                            </div>
+                        </div>
+
+                        <!-- Streak -->
+                        <div class="app-item-bg p-4 rounded-2xl border space-y-1 col-span-2 sm:col-span-1">
+                            <div class="flex items-center justify-between text-xs font-semibold app-subtext">
+                                <span>연속 달성</span>
+                                <i class="fa-solid fa-fire text-rose-500 text-base"></i>
+                            </div>
+                            <div class="font-jua text-2xl sm:text-3xl text-rose-400 flex items-baseline space-x-1">
+                                <span id="streakDays">5</span>
+                                <span class="text-xs text-rose-500 font-normal">일 연속</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Daily Quest Progress Gauge -->
+                <div class="mt-4 p-4 rounded-2xl app-item-bg border space-y-2">
+                    <div class="flex justify-between items-center text-xs font-semibold">
+                        <span class="app-subtext flex items-center gap-1.5 flex-wrap">
+                            <span>오늘의 퀘스트 달성률</span>
+                            <span id="bonusBadge" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] px-2.5 py-0.5 rounded-full font-bold">
+                                🎁 3개 완료 시 +200P 보너스!
+                            </span>
+                        </span>
+                        <span class="font-jua text-emerald-400 text-base" id="questProgressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-900/40 rounded-full h-3 p-0.5 border border-slate-700/50">
+                        <div id="questProgressBar" class="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- 2. Main Work Area (Daily Quests & Reward Shop) -->
+                <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    <!-- Left Column: Daily Checklist (7 Cols) -->
+                    <div class="lg:col-span-7 app-card rounded-3xl p-6 border space-y-5">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700/40 pb-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-list-check text-theme-accent text-xl"></i>
+                                <h2 class="font-jua text-xl app-text-title">매일 할 일 (데일리 퀘스트)</h2>
+                            </div>
+
+                            <!-- Filter Tabs -->
+                            <div class="flex items-center space-x-1 bg-slate-800/40 p-1 rounded-xl text-xs font-semibold border border-slate-700/40">
+                                <button onclick="filterCategory('all')" id="filter-all" class="px-2.5 py-1 rounded-lg bg-slate-700 text-white">전체</button>
+                                <button onclick="filterCategory('공부')" id="filter-공부" class="px-2.5 py-1 rounded-lg app-subtext hover:text-white">📖 공부</button>
+                                <button onclick="filterCategory('생활습관')" id="filter-생활습관" class="px-2.5 py-1 rounded-lg app-subtext hover:text-white">🏠 습관</button>
+                            </div>
+                        </div>
+
+                        <!-- Day Selector Tabs (월/화/수/목/금/토/일) -->
+                        <div class="flex space-x-1 border-b border-slate-700/30 pb-2 overflow-x-auto" id="daySelectorTabs">
+                            <button onclick="selectDay('월')" id="dayTab-월" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">월</button>
+                            <button onclick="selectDay('화')" id="dayTab-화" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">화</button>
+                            <button onclick="selectDay('수')" id="dayTab-수" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">수</button>
+                            <button onclick="selectDay('목')" id="dayTab-목" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">목</button>
+                            <button onclick="selectDay('금')" id="dayTab-금" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">금</button>
+                            <button onclick="selectDay('토')" id="dayTab-토" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">토</button>
+                            <button onclick="selectDay('일')" id="dayTab-일" class="px-3 py-1.5 text-xs font-bold rounded-xl transition">일</button>
+                        </div>
+
+                        <!-- Quest List -->
+                        <div id="taskList" class="space-y-3">
+                            <!-- Task items populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Reward Shop & Coupon Vault (5 Cols) -->
+                    <div class="lg:col-span-5 space-y-6">
+
+                        <!-- Reward Store -->
+                        <div class="app-card rounded-3xl p-6 border space-y-5">
+                            <div class="flex justify-between items-center border-b border-slate-700/40 pb-4">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-store text-amber-400 text-xl"></i>
+                                    <h2 class="font-jua text-xl app-text-title">포인트 보상 상점</h2>
+                                </div>
+                            </div>
+
+                            <!-- Rewards List -->
+                            <div id="rewardList" class="space-y-3">
+                                <!-- Reward items populated via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Purchased Coupons Vault -->
+                        <div class="app-card rounded-3xl p-6 border space-y-4">
+                            <div class="flex items-center space-x-2 border-b border-slate-700/40 pb-3">
+                                <i class="fa-solid fa-ticket text-indigo-400 text-lg"></i>
+                                <h3 class="font-jua text-lg app-text-title">내 보상 쿠폰함</h3>
+                            </div>
+
+                            <div id="couponList" class="space-y-2">
+                                <!-- Purchased coupons populated via JS -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Growth History Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="app-card rounded-3xl border p-6 w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-700/40 pb-3">
+                <h3 class="font-jua text-xl app-text-title flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-indigo-400"></i>
+                    <span>안태하 모험가의 성장 이력</span>
+                </h3>
+                <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-700/50">
+                <canvas id="growthChart" class="w-full h-64"></canvas>
+            </div>
+            <div id="historyStats" class="grid grid-cols-2 gap-3 text-xs">
+                <!-- Stats populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Password Modal -->
+    <div id="parentAuthModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="app-card rounded-3xl border p-6 w-full max-w-sm space-y-4 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="font-jua text-xl app-text-title">부모 전용 인증</h3>
+            <p class="text-xs app-subtext">비밀번호(기본: 1234)를 입력하세요.</p>
+            <input type="password" id="parentPasswordInput" class="w-full text-center px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700 text-white font-bold text-lg focus:outline-none focus:border-amber-400" placeholder="••••">
+            <div class="flex gap-2">
+                <button onclick="closeParentAuthModal()" class="flex-1 py-2.5 rounded-xl app-item-bg font-bold text-xs">취소</button>
+                <button onclick="verifyParentPassword()" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Control Panel Modal -->
+    <div id="parentControlModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="app-card rounded-3xl border p-6 w-full max-w-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-700/40 pb-3">
+                <h3 class="font-jua text-xl app-text-title flex items-center gap-2">
+                    <i class="fa-solid fa-user-gear text-amber-400"></i>
+                    <span>부모 전용 관리 패널</span>
+                </h3>
+                <button onclick="closeParentControlModal()" class="text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="space-y-4">
+                <!-- Points & Level Manual Controls -->
+                <div class="p-4 rounded-2xl app-item-bg border space-y-3">
+                    <h4 class="font-bold text-sm text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>포인트 및 레벨 수동 조정</span>
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="manualPointsInput" placeholder="변경할 포인트" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white">
+                            <button onclick="setManualPoints()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs whitespace-nowrap">적용</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="manualLevelInput" placeholder="변경할 레벨" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white">
+                            <button onclick="setManualLevel()" class="px-3 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs whitespace-nowrap">적용</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bonus Quest Settings -->
+                <div class="p-4 rounded-2xl app-item-bg border space-y-3">
+                    <h4 class="font-bold text-sm text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-gift"></i>
+                        <span>데일리 보너스 포인트 설정</span>
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-[11px] app-subtext">목표 완료 퀘스트 개수</label>
+                            <input type="number" id="targetQuestCountInput" value="3" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[11px] app-subtext">지급 보너스 포인트</label>
+                            <input type="number" id="targetBonusPointsInput" value="200" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white">
+                        </div>
+                    </div>
+                    <button onclick="saveBonusSettings()" class="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold text-xs">보너스 규칙 저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Section -->
+    <script>
+        // State Management
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const todayDayStr = days[new Date().getDay()];
+
+        let state = {
+            userName: "안태하 모험가",
+            level: 3,
+            currentExp: 150,
+            maxExp: 300,
+            totalPoints: 1250,
+            todayPoints: 0,
+            streakDays: 5,
+            selectedDay: todayDayStr,
+            selectedCategory: 'all',
+            targetQuestCount: 3,
+            targetBonusPoints: 200,
+            bonusAwarded: false,
+            history: [
+                { date: '10/25', points: 150, quests: 3 },
+                { date: '10/26', points: 200, quests: 4 },
+                { date: '10/27', points: 120, quests: 2 },
+                { date: '10/28', points: 250, quests: 5 },
+                { date: '10/29', points: 180, quests: 3 },
+                { date: '10/30', points: 210, quests: 4 },
+                { date: '오늘', points: 0, quests: 0 }
+            ],
+            quests: [
+                { id: 1, title: '수학 문제집 2장 풀기', points: 50, exp: 30, category: '공부', day: '월', completed: false },
+                { id: 2, title: '영어 단어 10개 외우기', points: 40, exp: 20, category: '공부', day: '화', completed: false },
+                { id: 3, title: '자기 전 책 20분 읽기', points: 50, exp: 30, category: '공부', day: '수', completed: false },
+                { id: 4, title: '방 정돈 및 책상 닦기', points: 30, exp: 15, category: '생활습관', day: '목', completed: false },
+                { id: 5, title: '수학 문제집 2장 풀기', points: 50, exp: 30, category: '공부', day: '금', completed: false },
+                { id: 6, title: '일기 작성하기', points: 40, exp: 20, category: '공부', day: '토', completed: false },
+                { id: 7, title: '내일 책가방 챙기기', points: 30, exp: 15, category: '생활습관', day: '일', completed: false },
+                { id: 8, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '월', completed: false },
+                { id: 9, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '화', completed: false },
+                { id: 10, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '수', completed: false },
+                { id: 11, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '목', completed: false },
+                { id: 12, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '금', completed: false },
+                { id: 13, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '토', completed: false },
+                { id: 14, title: '양치질 3분 하기', points: 20, exp: 10, category: '생활습관', day: '일', completed: false }
+            ],
+            rewards: [
+                { id: 1, title: '게임 30분 이용권', points: 300, icon: '🎮' },
+                { id: 2, title: '맛있는 간식 쿠폰', points: 200, icon: '🍦' },
+                { id: 3, title: '취침 시간 30분 연장권', points: 400, icon: '🌙' }
+            ],
+            coupons: []
+        };
+
+        // Sound Synthesis via Tone.js
+        function playSuccessSound() {
+            try {
+                const synth = new Tone.Synth().toDestination();
+                const now = Tone.now();
+                synth.triggerAttackRelease("C5", "8n", now);
+                synth.triggerAttackRelease("E5", "8n", now + 0.1);
+                synth.triggerAttackRelease("G5", "8n", now + 0.2);
+                synth.triggerAttackRelease("C6", "4n", now + 0.3);
+            } catch (e) {
+                console.log('Tone.js audio play prevented', e);
+            }
+        }
+
+        // Fire Confetti animation
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 70,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        // UI Day Tab Switch Handler
+        function selectDay(dayStr) {
+            state.selectedDay = dayStr;
+            renderDashboard();
+        }
+
+        // Category Filter Handler
+        function filterCategory(cat) {
+            state.selectedCategory = cat;
+            renderDashboard();
+        }
+
+        // Toggle Task Complete State
+        function toggleTask(id) {
+            const task = state.quests.find(q => q.id === id);
+            if (!task) return;
+
+            task.completed = !task.completed;
+
+            if (task.completed) {
+                state.totalPoints += task.points;
+                state.todayPoints += task.points;
+                state.currentExp += task.exp;
+                playSuccessSound();
+                triggerConfetti();
+
+                // Check Level Up
+                if (state.currentExp >= state.maxExp) {
+                    state.level += 1;
+                    state.currentExp -= state.maxExp;
+                    state.maxExp = Math.floor(state.maxExp * 1.3);
+                    alert(`🎉 축하합니다! 레벨 ${state.level}로 레벨업하셨습니다!`);
+                }
+            } else {
+                state.totalPoints = Math.max(0, state.totalPoints - task.points);
+                state.todayPoints = Math.max(0, state.todayPoints - task.points);
+                state.currentExp = Math.max(0, state.currentExp - task.exp);
+            }
+
+            // Check Bonus Threshold
+            const completedCount = state.quests.filter(q => q.completed).length;
+            if (completedCount >= state.targetQuestCount && !state.bonusAwarded) {
+                state.bonusAwarded = true;
+                state.totalPoints += state.targetBonusPoints;
+                state.todayPoints += state.targetBonusPoints;
+                triggerConfetti();
+                alert(`🎁 축하합니다! 오늘 ${state.targetQuestCount}개 이상의 퀘스트를 완료하여 +${state.targetBonusPoints}P 보너스를 받았습니다!`);
+            }
+
+            renderDashboard();
+        }
+
+        // Render Main Dashboard & UI Components
+        function renderDashboard() {
+            // Update Hero Info
+            document.getElementById('userName').textContent = state.userName;
+            document.getElementById('userLevel').textContent = state.level;
+            document.getElementById('levelTitle').textContent = `${state.level}레벨 모험가`;
+            document.getElementById('totalPoints').textContent = state.totalPoints.toLocaleString();
+            document.getElementById('todayPoints').textContent = state.todayPoints.toLocaleString();
+            document.getElementById('streakDays').textContent = state.streakDays;
+            
+            document.getElementById('currentExp').textContent = state.currentExp;
+            document.getElementById('maxExp').textContent = state.maxExp;
+            
+            const expPercent = Math.min(100, Math.floor((state.currentExp / state.maxExp) * 100));
+            document.getElementById('expBar').style.width = `${expPercent}%`;
+
+            // Update Day Tabs Style
+            ['월', '화', '수', '목', '금', '토', '일'].forEach(day => {
+                const btn = document.getElementById(`dayTab-${day}`);
+                if (btn) {
+                    if (day === state.selectedDay) {
+                        btn.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-400 text-slate-900 transition shadow';
+                    } else {
+                        btn.className = 'px-3 py-1.5 text-xs font-bold rounded-xl app-subtext hover:text-white transition';
+                    }
+                }
+            });
+
+            // Filter Quests
+            const filteredQuests = state.quests.filter(q => {
+                const dayMatch = q.day === state.selectedDay;
+                const catMatch = state.selectedCategory === 'all' || q.category === state.selectedCategory;
+                return dayMatch && catMatch;
+            });
+
+            // Render Quests List
+            const taskListEl = document.getElementById('taskList');
+            if (filteredQuests.length === 0) {
+                taskListEl.innerHTML = `<div class="text-center py-8 text-xs app-subtext">해당 조건의 퀘스트가 없습니다.</div>`;
+            } else {
+                taskListEl.innerHTML = filteredQuests.map(q => `
+                    <div onclick="toggleTask(${q.id})" class="p-3.5 rounded-2xl app-item-bg border flex items-center justify-between cursor-pointer transition hover:border-amber-400/50 ${q.completed ? 'opacity-60 bg-emerald-500/10 border-emerald-500/30' : ''}">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-6 h-6 rounded-lg border flex items-center justify-center ${q.completed ? 'bg-emerald-500 border-emerald-500 text-slate-900' : 'border-slate-600'}">
+                                ${q.completed ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
+                            </div>
+                            <div>
+                                <div class="font-bold text-xs app-text-title ${q.completed ? 'line-through text-slate-400' : ''}">${q.title}</div>
+                                <div class="text-[10px] app-subtext flex items-center gap-2 mt-0.5">
+                                    <span>${q.category}</span>
+                                    <span>•</span>
+                                    <span class="text-amber-400 font-semibold">+${q.points}P</span>
+                                    <span>+${q.exp}EXP</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Calculate Quest Completion Progress
+            const totalQuests = state.quests.length;
+            const completedQuests = state.quests.filter(q => q.completed).length;
+            const progressPercent = totalQuests > 0 ? Math.floor((completedQuests / totalQuests) * 100) : 0;
+            
+            document.getElementById('questProgressPercent').textContent = `${progressPercent}%`;
+            document.getElementById('questProgressBar').style.width = `${progressPercent}%`;
+
+            // Update Bonus Badge Text
+            document.getElementById('bonusBadge').textContent = `🎁 ${state.targetQuestCount}개 완료 시 +${state.targetBonusPoints}P 보너스!`;
+
+            // Render Reward Store
+            const rewardListEl = document.getElementById('rewardList');
+            rewardListEl.innerHTML = state.rewards.map(r => `
+                <div class="p-3.5 rounded-2xl app-item-bg border flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">${r.icon}</span>
+                        <div>
+                            <div class="font-bold text-xs app-text-title">${r.title}</div>
+                            <div class="text-[10px] text-amber-400 font-semibold">${r.points} P</div>
+                        </div>
+                    </div>
+                    <button onclick="purchaseReward(${r.id})" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold text-xs transition">
+                        교환
+                    </button>
+                </div>
+            `).join('');
+
+            // Render Coupons Vault
+            const couponListEl = document.getElementById('couponList');
+            if (state.coupons.length === 0) {
+                couponListEl.innerHTML = `<div class="text-center py-4 text-xs app-subtext">보관된 쿠폰이 없습니다.</div>`;
+            } else {
+                couponListEl.innerHTML = state.coupons.map(c => `
+                    <div class="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs">
+                        <span class="font-bold text-indigo-300">${c.title}</span>
+                        <span class="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold">사용 가능</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Reward Purchase Handler
+        function purchaseReward(id) {
+            const reward = state.rewards.find(r => r.id === id);
+            if (!reward) return;
+
+            if (state.totalPoints < reward.points) {
+                alert('포인트가 부족합니다!');
+                return;
+            }
+
+            state.totalPoints -= reward.points;
+            state.coupons.push({ ...reward, purchasedAt: new Date() });
+            triggerConfetti();
+            alert(`🎉 '${reward.title}' 쿠폰을 성공적으로 교환했습니다!`);
+            renderDashboard();
+        }
+
+        // AI Pet Alert Trigger Handler
+        function triggerPetAlert(type) {
+            const container = document.getElementById('aiChatContainer');
+            let alertHtml = '';
+
+            if (type === 'urgent') {
+                alertHtml = `
+                    <div class="app-item-bg p-3 rounded-2xl border space-y-1 animate-bounce">
+                        <div class="font-bold text-rose-400 flex items-center justify-between">
+                            <span>⏰ 시간 재촉 긴급 경고!</span>
+                            <span class="text-[10px] app-subtext">지금!</span>
+                        </div>
+                        <div class="app-text-title leading-relaxed">
+                            🔥 안태하 모험가님! 시간이 차오르고 있어요! 미룬 퀘스트를 바로 끝내야 오늘 목표 보너스를 사수할 수 있습니다!
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'reminder') {
+                alertHtml = `
+                    <div class="app-item-bg p-3 rounded-2xl border space-y-1">
+                        <div class="font-bold text-indigo-400 flex items-center justify-between">
+                            <span>🔔 오늘 할 일 체크</span>
+                            <span class="text-[10px] app-subtext">알림</span>
+                        </div>
+                        <div class="app-text-title leading-relaxed">
+                            오늘 완료하지 않은 퀘스트를 체크하고 포인트를 적립해보세요! 🐉
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'tip') {
+                alertHtml = `
+                    <div class="app-item-bg p-3 rounded-2xl border space-y-1">
+                        <div class="font-bold text-amber-400 flex items-center justify-between">
+                            <span>💡 포인트 꿀팁</span>
+                            <span class="text-[10px] app-subtext">Tip</span>
+                        </div>
+                        <div class="app-text-title leading-relaxed">
+                            매일 연속으로 퀘스트를 완료하면 연속 달성 스티커가 쌓여 레벨업이 빨라져요!
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'cheer') {
+                alertHtml = `
+                    <div class="app-item-bg p-3 rounded-2xl border space-y-1">
+                        <div class="font-bold text-emerald-400 flex items-center justify-between">
+                            <span>🔥 파이팅 메시지</span>
+                            <span class="text-[10px] app-subtext">응원</span>
+                        </div>
+                        <div class="app-text-title leading-relaxed">
+                            안태하 모험가님은 최고예요! 멋진 보상 쿠폰이 코앞에 있어요! 🚀
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+        }
+
+        // Toggle Dark/Light Mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const icon = document.getElementById('themeToggleIcon');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.className = 'fa-solid fa-moon text-lg text-amber-400';
+            } else {
+                icon.className = 'fa-solid fa-sun text-lg text-amber-500';
+            }
+        }
+
+        // Theme Accent Picker
+        function setThemeColor(color) {
+            document.body.className = document.body.className.replace(/theme-\w+/g, '');
+            document.body.classList.add(`theme-${color}`);
+        }
+
+        // AI Sidebar Toggle for Mobile
+        function toggleAiSidebar() {
+            const sidebar = document.getElementById('aiSidebar');
+            sidebar.classList.toggle('hidden');
+        }
+
+        // Growth Chart & History Modal Handlers
+        let chartInstance = null;
+        function openHistoryModal() {
+            document.getElementById('historyModal').classList.remove('hidden');
+            renderChart();
+        }
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: state.history.map(h => h.date),
+                    datasets: [{
+                        label: '획득 포인트 (P)',
+                        data: state.history.map(h => h.points),
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { color: 'rgba(255,255,255,0.1)' } }
+                    }
+                }
+            });
+
+            const statsEl = document.getElementById('historyStats');
+            const totalEarned = state.history.reduce((acc, cur) => acc + cur.points, 0);
+            statsEl.innerHTML = `
+                <div class="app-item-bg p-3 rounded-xl border text-center">
+                    <div class="app-subtext">최근 7일 누적 포인트</div>
+                    <div class="font-jua text-lg text-amber-400">${totalEarned} P</div>
+                </div>
+                <div class="app-item-bg p-3 rounded-xl border text-center">
+                    <div class="app-subtext">일평균 퀘스트 완료</div>
+                    <div class="font-jua text-lg text-emerald-400">3.5 개</div>
+                </div>
+            `;
+        }
+
+        // Parent Admin Modal Handlers
+        function openParentAuthModal() {
+            document.getElementById('parentAuthModal').classList.remove('hidden');
+        }
+        function closeParentAuthModal() {
+            document.getElementById('parentAuthModal').classList.add('hidden');
+            document.getElementById('parentPasswordInput').value = '';
+        }
+        function verifyParentPassword() {
+            const pwd = document.getElementById('parentPasswordInput').value;
+            if (pwd === '1234') {
+                closeParentAuthModal();
+                openParentControlModal();
+            } else {
+                alert('비밀번호가 올바르지 않습니다.');
+            }
+        }
+
+        function openParentControlModal() {
+            document.getElementById('parentControlModal').classList.remove('hidden');
+            document.getElementById('targetQuestCountInput').value = state.targetQuestCount;
+            document.getElementById('targetBonusPointsInput').value = state.targetBonusPoints;
+        }
+        function closeParentControlModal() {
+            document.getElementById('parentControlModal').classList.add('hidden');
+        }
+
+        function setManualPoints() {
+            const val = parseInt(document.getElementById('manualPointsInput').value);
+            if (!isNaN(val)) {
+                state.totalPoints = val;
+                renderDashboard();
+                alert(`포인트가 ${val}P로 변경되었습니다.`);
+            }
+        }
+
+        function setManualLevel() {
+            const val = parseInt(document.getElementById('manualLevelInput').value);
+            if (!isNaN(val)) {
+                state.level = val;
+                renderDashboard();
+                alert(`레벨이 Lv.${val}로 변경되었습니다.`);
+            }
+        }
+
+        function saveBonusSettings() {
+            const count = parseInt(document.getElementById('targetQuestCountInput').value);
+            const pts = parseInt(document.getElementById('targetBonusPointsInput').value);
+            if (!isNaN(count) && !isNaN(pts)) {
+                state.targetQuestCount = count;
+                state.targetBonusPoints = pts;
+                renderDashboard();
+                alert('보너스 설정이 저장되었습니다.');
+            }
+        }
+
+        // Initialization
+        window.onload = function() {
+            renderDashboard();
+        };
+    </script>
+</body>
+</html>
